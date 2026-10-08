@@ -277,9 +277,11 @@ table.pull tr.tot td{background:#EEF5F1;font-weight:700}
         <option value="date">Event date</option>
         <option value="name">Name (A–Z)</option>
       </select>
-      <select id="statusFilter" title="Show only plans with this status">
-        <option value="">All status</option>
-        <option>Draft</option><option>Sent</option><option>Final</option><option>Archived</option>
+      <select id="statusFilter" title="Choose which plans to show. Archived plans are hidden unless you pick them.">
+        <option value="">Active plans</option>
+        <option>Draft</option><option>Sent</option><option>Final</option>
+        <option value="Archived">Archived only</option>
+        <option value="*">Everything</option>
       </select>
     </div>
     <div id="projList"></div>
@@ -2056,14 +2058,17 @@ async function refreshList() {
 }
 function renderList() {
   const el = $('#projList'); const q = ($('#search').value || '').toLowerCase(), sort = $('#sort').value, sf = $('#statusFilter').value;
-  let L = LIST.filter(m => (!q || (m.name + ' ' + (m.venue || '')).toLowerCase().includes(q)) && (!sf || m.status === sf));
+  const statusOk = m => sf === '*' ? true : sf ? (m.status || 'Draft') === sf : (m.status || 'Draft') !== 'Archived';
+  let L = LIST.filter(m => (!q || (m.name + ' ' + (m.venue || '')).toLowerCase().includes(q)) && statusOk(m));
   L.sort((a, b) => sort === 'name' ? (a.name || '').localeCompare(b.name || '') : sort === 'date' ? String(b.date || '').localeCompare(String(a.date || '')) : (b.updatedAt || 0) - (a.updatedAt || 0));
   if (!L.length) {
-    el.innerHTML = `<div class="empty">${LIST.length ? 'No plans match.' : HAS_FS && S.dir && S.dirOk ? 'No plans in this folder yet. Click <b>New Plan</b> to start one.' : HAS_FS ? 'Choose the Plans folder above to see the team\'s plans.' : 'Plans you open or start on this device show here.'}</div>`; return;
+    const nArch = LIST.filter(m => m.status === 'Archived').length;
+    el.innerHTML = `<div class="empty">${LIST.length ? (!sf && !q && nArch === LIST.length ? `All ${nArch} plan${nArch > 1 ? 's are' : ' is'} archived. Pick <b>Archived only</b> in the list filter to see ${nArch > 1 ? 'them' : 'it'}.` : 'No plans match.') : HAS_FS && S.dir && S.dirOk ? 'No plans in this folder yet. Click <b>New Plan</b> to start one.' : HAS_FS ? 'Choose the Plans folder above to see the team\'s plans.' : 'Plans you open or start on this device show here.'}</div>`; return;
   }
+  const hidArch = !sf ? LIST.filter(m => m.status === 'Archived' && (!q || (m.name + ' ' + (m.venue || '')).toLowerCase().includes(q))).length : 0;
   el.innerHTML = L.map((m, i) => `<div class="card"><div class="thumb" style="background-image:url('${m.thumb || ''}')"><span class="pill status ${esc(m.status || 'Draft')}">${esc(m.status || 'Draft')}</span></div>
     <div class="body"><div class="name">${esc(m.name || 'Untitled')}</div><div class="sub">${esc([m.venue, fmtDate(m.date)].filter(Boolean).join(' · '))}</div><div class="sub" style="font-size:12.5px">${m.plans || 1} plan${(m.plans || 1) > 1 ? 's' : ''} · edited ${fmtTime(m.updatedAt)}${m.lastSavedBy ? ' by ' + esc(m.lastSavedBy) : ''}</div></div>
-    <div class="acts"><button class="btn cta small grow" data-open="${i}" title="Open and edit">${icon('note')}Open</button><button class="btn outline small" data-view="${i}" title="Look and print only">${icon('eye')}View</button></div></div>`).join('');
+    <div class="acts"><button class="btn cta small grow" data-open="${i}" title="Open and edit">${icon('note')}Open</button><button class="btn outline small" data-view="${i}" title="Look and print only">${icon('eye')}View</button></div></div>`).join('') + (hidArch ? `<p class="note" style="grid-column:1/-1;margin:0">${hidArch} archived plan${hidArch > 1 ? 's are' : ' is'} hidden. Pick <b>Archived only</b> or <b>Everything</b> in the filter to see ${hidArch > 1 ? 'them' : 'it'}.</p>` : '');
   $$('[data-open]', el).forEach(b => b.onclick = () => openFromList(L[+b.dataset.open], false));
   $$('[data-view]', el).forEach(b => b.onclick = () => openFromList(L[+b.dataset.view], true));
 }
