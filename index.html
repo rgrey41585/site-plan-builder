@@ -1817,7 +1817,7 @@ function panelLayout(p, m) {
 }
 function northBox(p, m, v) {
   const u = m.u, w = 190 * u, h = 82 * u; const pos = panelPos(p, 'north', { x: m.W - m.E - 16 * u - w, y: m.H - m.E - 14 * u - h });
-  const opts = [5, 10, 20, 25, 50, 100, 200, 250, 500]; let L = 25; for (const o of opts) { L = o; if (o * v.k >= 70 * u) break; }
+  const opts = [5, 10, 20, 25, 50, 100, 200, 250, 500], maxL = w - 58 * u - 24 * u; let L = opts[0]; for (const o of opts) { if (o * v.k <= maxL) L = o; if (o * v.k >= 60 * u) break; }
   const bl = L * v.k; const bx = 58 * u, by = 46 * u;
   let s = `<g transform="translate(${f3(pos.x)} ${f3(pos.y)})"><rect width="${f3(w)}" height="${f3(h)}" rx="${f3(6 * u)}" fill="#fff" stroke="${C.ink}" stroke-width="${f3(2.2 * u)}"/>`;
   s += `<g transform="translate(${f3(30 * u)} ${f3(36 * u)}) rotate(${f3(p.northDeg || 0)})"><path d="M0 ${f3(-24 * u)}L${f3(10 * u)} ${f3(14 * u)}L0 ${f3(6 * u)}Z" fill="${C.ink}"/><path d="M0 ${f3(-24 * u)}L${f3(-10 * u)} ${f3(14 * u)}L0 ${f3(6 * u)}Z" fill="#fff" stroke="${C.ink}" stroke-width="${f3(1.4 * u)}"/></g>`;
