@@ -2366,7 +2366,27 @@ function boot() {
   initFolder(); refreshList();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { buildLibrary(); if (S.P) renderScene(); });
 }
-document.addEventListener('DOMContentLoaded', boot);
+/* ---------------- team password (online copy only) ----------------
+   Keeps casual visitors out of the hosted page. It is NOT real security: the code is public.
+   The OneDrive / double-clicked copy (file://) and local testing skip it.
+   To change the password: put the SHA-256 of "jnn-spb:" + NEWPASSWORD (in capitals) in GATE_HASH. */
+const GATE_HASH = 'cfc022d0584ee3c4818b0344f94086ceb3782610b6a40ddc8b0a53a14781ef6c';
+function needsGate() { return /^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) && LS.get('spb.gate', '') !== GATE_HASH; }
+async function sha256hex(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+function showGate() {
+  const g = document.createElement('div'); g.id = 'gate';
+  g.innerHTML = `<div class="band" style="position:fixed;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:24px;z-index:200">
+    <div class="eyebrow">Jim 'N Nick's Bar-B-Q · Catering</div><h1 style="margin:6px 0 22px">Site Plan Builder</h1>
+    <label for="gatePw" style="font-size:16px;margin-bottom:8px">Type the team password</label>
+    <input id="gatePw" type="password" autocomplete="current-password" style="height:52px;width:min(320px,100%);border-radius:12px;border:2px solid #C5C1B9;padding:0 16px;font-size:20px;text-align:center;background:#fff;color:#171512">
+    <button class="btn cta" id="gateGo" style="margin-top:14px;min-width:200px;min-height:52px;font-size:18px">Open</button>
+    <p id="gateMsg" style="min-height:22px;color:#ffb4a8;margin-top:12px"></p>
+    <p class="note" style="color:#C5C1B9;max-width:420px">Ask your Local Owner for the password. You only type it once on each computer or iPad.</p></div>`;
+  document.body.appendChild(g); const i = $('#gatePw'); i.focus();
+  const go = async () => { const h = await sha256hex('jnn-spb:' + i.value.trim().toUpperCase()); if (h === GATE_HASH) { LS.set('spb.gate', h); g.remove(); boot(); } else { $('#gateMsg').textContent = "That's not it. Try again."; i.select(); } };
+  $('#gateGo').onclick = go; i.onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+document.addEventListener('DOMContentLoaded', () => { if (needsGate()) showGate(); else boot(); });
 
 </script>
 </body>
